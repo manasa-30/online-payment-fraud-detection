@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fraud Detection</title>
+    <style>
+        body { 
+            font-family: 'Courier New', monospace; 
+            max-width: 700px; 
+            margin: 30px auto; 
+            padding: 30px; 
+            background: linear-gradient(135deg, #0d1117, #161b22);
+            color: #8b949e; 
+            text-shadow: 0 0 2px #30363d;
+        }
+        h1 { 
+            text-align: center; 
+            font-size: 2.5em; 
+            margin-bottom: 30px;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        @keyframes glow {
+            from { text-shadow: 0 0 5px #30363d; }
+            to { text-shadow: 0 0 8px #30363d, 0 0 10px #30363d; }
+        }
+        .form-container {
+            background: rgba(48, 54, 61, 0.1);
+            border: 2px solid #30363d;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 0 5px rgba(48, 54, 61, 0.1);
+        }
+        .form-group { 
+            margin: 20px 0; 
+            position: relative;
+        }
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        input, select { 
+            width: 100%; 
+            padding: 12px; 
+            margin-bottom: 10px; 
+            background: rgba(13, 17, 23, 0.8);
+            border: 2px solid #30363d;
+            border-radius: 8px;
+            color: #8b949e;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s ease;
+        }
+        input:focus, select:focus {
+            outline: none;
+            box-shadow: 0 0 4px #30363d;
+            transform: scale(1.02);
+        }
+        button { 
+            background: linear-gradient(45deg, #30363d, #21262d);
+            color: black; 
+            padding: 15px 30px; 
+            border: none; 
+            border-radius: 25px;
+            cursor: pointer; 
+            font-size: 1.2em;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 20px;
+        }
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(48, 54, 61, 0.2);
+            background: linear-gradient(45deg, #21262d, #30363d);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .result { 
+            margin-top: 30px; 
+            padding: 20px; 
+            border-radius: 15px;
+            text-align: center;
+            font-size: 1.3em;
+            animation: slideIn 0.5s ease-out;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fraud { 
+            background: linear-gradient(45deg, #f85149, #da3633);
+            color: white;
+            border: 3px solid #f85149;
+            box-shadow: 0 0 30px rgba(248, 81, 73, 0.5);
+        }
+        .legitimate { 
+            background: linear-gradient(45deg, #3fb950, #238636);
+            color: white;
+            border: 3px solid #3fb950;
+            box-shadow: 0 0 30px rgba(63, 185, 80, 0.5);
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 4px solid rgba(48, 54, 61, 0.2);
+            border-radius: 50%;
+            border-top: 4px solid #30363d;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .probability-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(13, 17, 23, 0.7);
+            border-radius: 10px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        .probability-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 1s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Fraud Detection System</h1>
+    
+    <div class="form-container">
+        <form id="fraudForm">
+            <div class="form-group">
+                <label>🔄 Transaction Type:</label>
+                <select name="type" required>
+                    <option value="">Select Transaction Type</option>
+                    <option value="TRANSFER">💸 TRANSFER - Money sent between accounts</option>
+                    <option value="CASH_OUT">💰 CASH_OUT - Withdraw money from account</option>
+                    <option value="PAYMENT">💳 PAYMENT - Purchase or bill payment</option>
+                    <option value="CASH_IN">💵 CASH_IN - Deposit money to account</option>
+                    <option value="DEBIT">🏧 DEBIT - Direct account deduction</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>💲 Amount:</label>
+                <input type="number" name="amount" step="0.01" placeholder="Enter transaction amount" required>
+            </div>
+            <div class="form-group">
+                <label>🏦 Old Balance Origin:</label>
+                <input type="number" name="oldbalanceOrg" step="0.01" placeholder="Origin account balance before" required>
+            </div>
+            <div class="form-group">
+                <label>🏦 New Balance Origin:</label>
+                <input type="number" name="newbalanceOrig" step="0.01" placeholder="Origin account balance after" required>
+            </div>
+            <div class="form-group">
+                <label>🏪 Old Balance Destination:</label>
+                <input type="number" name="oldbalanceDest" step="0.01" placeholder="Destination account balance before" required>
+            </div>
+            <div class="form-group">
+                <label>🏪 New Balance Destination:</label>
+                <input type="number" name="newbalanceDest" step="0.01" placeholder="Destination account balance after" required>
+            </div>
+            <button type="submit">🔍 Analyze Transaction</button>
+        </form>
+    </div>
+    
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Analyzing transaction...</p>
+    </div>
+    
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('fraudForm').onsubmit = async (e) => {
+            e.preventDefault();
+            
+            // Show loading animation
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                // Hide loading
+                document.getElementById('loading').style.display = 'none';
+                
+                const resultDiv = document.getElementById('result');
+                const probability = (result.fraud_probability * 100).toFixed(2);
+                const barColor = result.is_fraud ? '#ff0000' : '#00ff00';
+                
+                resultDiv.className = `result ${result.is_fraud ? 'fraud' : 'legitimate'}`;
+                resultDiv.innerHTML = `
+                    <h3>${result.is_fraud ? '⚠️ FRAUD DETECTED' : '✅ LEGITIMATE TRANSACTION'}</h3>
+                    <p><strong>Risk Level: ${result.result}</strong></p>
+                    <p>Fraud Probability: <strong>${probability}%</strong></p>
+                    <div class="probability-bar">
+                        <div class="probability-fill" style="width: ${probability}%; background: ${barColor};"></div>
+                    </div>
+                    <p><em>${result.is_fraud ? 'High risk transaction detected!' : 'Transaction appears safe.'}</em></p>
+                `;
+                resultDiv.style.display = 'block';
+                
+                if (result.is_fraud) {
+                    console.log('🚨 FRAUD ALERT!');
+                }
+                
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('result').innerHTML = `
+                    <div class="result fraud">
+                        <h3>❌ Error</h3>
+                        <p>Failed to analyze transaction. Please try again.</p>
+                    </div>
+                `;
+                document.getElementById('result').style.display = 'block';
+            }
+        };
+        
+        // Add input validation and real-time feedback
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            input.addEventListener('input', function() {
+                if (this.value < 0) {
+                    this.style.borderColor = '#ff0000';
+                    this.style.boxShadow = '0 0 10px #ff0000';
+                } else {
+                    this.style.borderColor = '#00ff00';
+                    this.style.boxShadow = '0 0 10px #00ff00';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
